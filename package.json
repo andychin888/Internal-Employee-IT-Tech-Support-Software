@@ -1,0 +1,20 @@
+{
+  "name": "it-helpdesk",
+  "version": "1.0.0",
+  "description": "IT Tech Support help desk: tickets, chat, attachments, escalation",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "reset": "rm -f helpdesk.db helpdesk.db-* && rm -rf uploads"
+  },
+  "type": "commonjs",
+  "dependencies": {
+    "express": "^5.2.1",
+    "multer": "^2.4.0"
+  },
+  "private": true,
+  "engines": {
+    "node": ">=22.5"
+  }
+}

@@ -1,0 +1,4 @@
+node_modules/
+helpdesk.db*
+uploads/
+.DS_Store
