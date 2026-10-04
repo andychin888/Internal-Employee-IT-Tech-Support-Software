@@ -33,6 +33,14 @@ const ICONS = {
   file: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/>',
   headset: '<path d="M3 14v-2a9 9 0 0 1 18 0v2"/><path d="M21 16a2 2 0 0 1-2 2h-1v-6h3zM3 16a2 2 0 0 0 2 2h1v-6H3z"/>',
   release: '<path d="M18 6 6 18M6 6l12 12"/>',
+  search: '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',
+  inbox: '<path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>',
+  user: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
+  layers: '<path d="m12 2 10 5-10 5L2 7z"/><path d="m2 17 10 5 10-5M2 12l10 5 10-5"/>',
+  alert: '<circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/>',
+  list: '<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>',
+  lock: '<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
+  upload: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>',
 };
 const icon = (name) => raw(`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[name]}</svg>`);
 
@@ -117,7 +125,7 @@ function authLayout(inner) {
       <section class="auth-hero">
         <div class="brand"><span class="logo">${icon('headset')}</span> HelpDesk</div>
         <div>
-          <h1>IT support, without the runaround.</h1>
+          <h1>IT support, <span>without the runaround.</span></h1>
           <p>Report a problem, track its progress, and chat directly with the technician working on it.</p>
           <ul>
             <li>Open tickets with screenshots and log files attached</li>
@@ -214,11 +222,11 @@ function shell(inner, active) {
   const staff = u.role === 'staff';
   app.innerHTML = html`
     <header class="topbar">
-      <div style="display:flex;align-items:center;gap:28px">
-        <a class="brand" href="#/" style="color:inherit;text-decoration:none"><span class="logo">${icon('headset')}</span> HelpDesk${staff ? html` <span class="tier" style="margin-left:2px">STAFF</span>` : ''}</a>
+      <div class="left">
+        <a class="brand" href="#/"><span class="logo">${icon('headset')}</span> HelpDesk${staff ? html` <span class="tier">STAFF</span>` : ''}</a>
         <nav>
-          <a href="#/" class="${active === 'list' ? 'active' : ''}">${staff ? 'Ticket queue' : 'My tickets'}</a>
-          <a href="#/new" class="${active === 'new' ? 'active' : ''}">New ticket</a>
+          <a href="#/" class="${active === 'list' ? 'active' : ''}" title="${staff ? 'Ticket queue' : 'My tickets'}">${icon('list')}<span>${staff ? 'Ticket queue' : 'My tickets'}</span></a>
+          <a href="#/new" class="${active === 'new' ? 'active' : ''}" title="New ticket">${icon('plus')}<span>New ticket</span></a>
         </nav>
       </div>
       <div class="who">
@@ -275,7 +283,7 @@ async function renderList() {
               )}
             </div>`}
         <div class="spacer"></div>
-        <input type="search" id="q" placeholder="Search tickets or #id" value="${listPrefs.q}" />
+        <div class="search">${icon('search')}<input type="search" id="q" placeholder="Search tickets or #id" value="${listPrefs.q}" aria-label="Search tickets" /></div>
       </div>
       <div id="rows"><div class="empty">Loading…</div></div>
     </div>`, 'list');
@@ -316,12 +324,12 @@ function renderStats(s) {
   const el = $('#stats');
   if (!el) return;
   el.innerHTML = html`${[
-    [s.open, 'Active tickets'],
-    [s.unassigned, 'Unassigned'],
-    [s.mine, 'Assigned to me'],
-    [s.escalated, 'Escalated'],
-    [s.closedToday, 'Closed today'],
-  ].map(([n, l]) => html`<div class="card stat"><div class="n">${n}</div><div class="l">${l}</div></div>`)}`;
+    [s.open, 'Active tickets', 'inbox', 'info'],
+    [s.unassigned, 'Unassigned', 'alert', 'warn'],
+    [s.mine, 'Assigned to me', 'user', ''],
+    [s.escalated, 'Escalated', 'up', 'danger'],
+    [s.closedToday, 'Closed today', 'check', 'ok'],
+  ].map(([n, l, ic, tone]) => html`<div class="card stat"><div class="top"><span class="l">${l}</span><span class="ic ${tone}">${icon(ic)}</span></div><div class="n">${n}</div></div>`)}`;
 }
 
 function tierBadge(tier) {
@@ -332,7 +340,7 @@ function renderRows(tickets, staff) {
   const el = $('#rows');
   if (!el) return;
   if (!tickets.length) {
-    el.innerHTML = html`<div class="empty">${staff ? 'No tickets match this view.' : html`You have no tickets here. <a href="#/new">Open a new ticket</a> if you need help.`}</div>`;
+    el.innerHTML = html`<div class="empty"><div class="ic">${icon('inbox')}</div>${staff ? 'No tickets match this view.' : html`You have no tickets here. <a href="#/new">Open a new ticket</a> if you need help.`}</div>`;
     return;
   }
   el.innerHTML = html`
@@ -347,7 +355,9 @@ function renderRows(tickets, staff) {
           </div>
           <div><span class="badge ${t.status}">${STATUS_LABEL[t.status]}</span></div>
           <div class="prio ${t.priority}">${t.priority}</div>
-          <div class="sub">${t.assignee_name || (t.status === 'closed' ? '—' : 'Unassigned')}</div>
+          <div class="assignee">${t.assignee_name
+            ? html`<span class="avatar staff sm">${initials(t.assignee_name)}</span><span class="sub">${t.assignee_name}</span>`
+            : html`<span class="sub">${t.status === 'closed' ? '—' : 'Unassigned'}</span>`}</div>
           <div class="sub" title="${fullTime(t.updated_at)}">${ago(t.updated_at)}</div>
         </a>`
     )}`;
@@ -412,11 +422,11 @@ function renderNew() {
       </div>
       <div class="field">
         <label>Attachments <span class="muted" style="font-weight:400">(optional · up to 5 files, 10 MB each)</span></label>
-        <div class="dropzone" id="drop">${icon('clip')} Drag files here or <a href="#" id="browse">browse</a> — screenshots, logs, documents</div>
+        <div class="dropzone" id="drop"><div class="ic">${icon('upload')}</div>Drag files here or <a href="#" id="browse">browse</a><div class="small" style="margin-top:2px">Screenshots, logs, documents</div></div>
         <input type="file" id="file-input" multiple hidden />
         <ul class="file-list" id="file-list"></ul>
       </div>
-      <div style="display:flex;justify-content:flex-end;gap:8px">
+      <div class="form-foot">
         <a class="btn" href="#/">Cancel</a>
         <button class="btn primary" type="submit">Submit ticket</button>
       </div>
@@ -489,17 +499,19 @@ async function renderTicket(id) {
       <section class="card conversation">
         <div class="thread" id="thread"></div>
         <form class="composer" id="composer">
-          <textarea name="body" id="msg" placeholder="Write a message… (Enter to send, Shift+Enter for a new line)"></textarea>
-          <ul class="file-list" id="msg-files" style="margin:0 0 8px"></ul>
-          <div class="bar">
-            <button type="button" class="btn ghost" id="attach" title="Attach files">${icon('clip')} Attach</button>
-            <input type="file" id="msg-input" multiple hidden />
-            ${staff ? html`<label class="switch"><input type="checkbox" id="internal" /> Internal note (staff only)</label>` : ''}
-            <div class="spacer"></div>
-            <button class="btn primary" type="submit" id="send">${icon('send')} Send</button>
+          <div class="box">
+            <textarea name="body" id="msg" placeholder="Write a message… (Enter to send, Shift+Enter for a new line)"></textarea>
+            <ul class="file-list" id="msg-files"></ul>
+            <div class="bar">
+              <button type="button" class="btn ghost" id="attach" title="Attach files">${icon('clip')} Attach</button>
+              <input type="file" id="msg-input" multiple hidden />
+              ${staff ? html`<label class="switch"><input type="checkbox" id="internal" /> Internal note<span class="long">&nbsp;(staff only)</span></label>` : ''}
+              <div class="spacer"></div>
+              <button class="btn primary" type="submit" id="send">${icon('send')} Send</button>
+            </div>
           </div>
         </form>
-        <div class="closed-banner hidden" id="closed-banner">This ticket is closed. Reopen it to continue the conversation.</div>
+        <div class="closed-banner hidden" id="closed-banner">${icon('lock')} This ticket is closed. Reopen it to continue the conversation.</div>
       </section>
       <aside class="card side" id="side"></aside>
     </div>`, 'ticket');
@@ -589,7 +601,7 @@ async function renderTicket(id) {
         <div>
           <div class="author">${mine ? 'You' : m.author_name}${isStaffAuthor && !mine ? ' · IT Support' : ''} · <span title="${fullTime(m.created_at)}">${ago(m.created_at)}</span></div>
           <div class="bubble">
-            ${m.kind === 'note' ? html`<div class="note-tag">Internal note</div>` : ''}
+            ${m.kind === 'note' ? html`<div class="note-tag">${icon('lock')} Internal note</div>` : ''}
             ${m.body ? html`<div class="text">${m.body}</div>` : ''}
             ${files}
           </div>
@@ -618,7 +630,7 @@ async function renderTicket(id) {
           <div class="meta-line">
             <span class="badge ${t.status}">${STATUS_LABEL[t.status]}</span>
             ${tierBadge(t.tier)}
-            <span>Opened by <b style="color:var(--text)">${t.requester_name}</b> ${ago(t.created_at)}</span>
+            <span>Opened by <b>${t.requester_name}</b> ${ago(t.created_at)}</span>
           </div>
         </div>
         <div class="actions">${btns}</div>
@@ -636,14 +648,14 @@ async function renderTicket(id) {
           : html`<span class="prio ${t.priority}">${t.priority}</span>`}</dd></div>
         <div><dt>Support level</dt><dd>${tierBadge(t.tier)} ${t.tier === 1 ? 'Frontline' : t.tier === 2 ? 'Senior technician' : 'IT management'}</dd></div>
         <div><dt>Assigned to</dt><dd>${t.assignee_name
-          ? html`<span class="avatar staff" style="width:24px;height:24px;font-size:.65rem">${initials(t.assignee_name)}</span> ${t.assignee_name}`
+          ? html`<span class="avatar staff sm">${initials(t.assignee_name)}</span> ${t.assignee_name}`
           : html`<span class="muted">Waiting for a technician</span>`}</dd></div>
         <div><dt>Requester</dt><dd>${t.requester_name}</dd></div>
         <div><dt>Created</dt><dd>${fullTime(t.created_at)}</dd></div>
         ${t.closed_at ? html`<div><dt>Closed</dt><dd>${fullTime(t.closed_at)}</dd></div>` : ''}
       </dl>
       <hr />
-      <dt style="font-size:.75rem;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:700;margin-bottom:6px">Description</dt>
+      <div class="dt">Description</div>
       <div class="desc small">${t.description}</div>`;
     $('#prio')?.addEventListener('change', async (e) => {
       try {
